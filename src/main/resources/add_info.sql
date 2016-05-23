@@ -1,0 +1,2 @@
+INSERT INTO `mydatabase`.`users` (`user_id`, `login`, `first_name`, `last_name`, `email`) VALUES ('0', '00', '000', '0000', '0@');
+INSERT INTO `mydatabase`.`users` (`user_id`, `login`, `first_name`, `last_name`, `email`) VALUES ('1', '11', '111', '1111', '1@');
