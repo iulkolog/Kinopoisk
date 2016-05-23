@@ -1,5 +1,6 @@
 package dao;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -7,6 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.List;
+import objects.*;
 
 /**
  *  Абстрактный класс предоставляющий базовую реализацию CRUD операций с использованием JDBC.
@@ -26,22 +28,22 @@ public abstract class AbstractReflectionJDBCDao<T> implements InterfaceReflectio
     /**
      * Возвращает запрос для обновления записи.
      * */
-    public abstract String getUpdateQuery(T object);
+    public abstract String getUpdateQuery(T object) throws DAOException;
 
     /**
      * Возвращает запрос для удаления записи из базы данных.
      */
-    public abstract String getDeleteQuery(T object);
+    public abstract String getDeleteQuery(T object) throws DAOException;
 
     /**
      * Возвращает запрос для выборки записей.
      */
-    public abstract String getSelectQuery(T object);
+    public abstract String getSelectQuery(T object) throws DAOException;
 
     /**
      * Возвращает запрос для выборки всех записей.
      */
-    public abstract String getSelectAllQuery(T object);
+    public abstract String getSelectAllQuery(T object) throws DAOException;
 
     /**
      * Устанавливает аргументы insert запроса в соответствии со значением полей объекта object.
@@ -111,13 +113,26 @@ public abstract class AbstractReflectionJDBCDao<T> implements InterfaceReflectio
     public T selectByKey(T key) throws DAOException {
         List<T> list;
         String sql = getSelectQuery(key);
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+
+        System.out.print("sql = " + sql);
+
+        if (sql == null)
+            throw new DAOException("empty sql query");
+        PreparedStatement statement = null;
+        try {
+            statement = connection.prepareStatement(sql);
+            //System.out.println("meta " + statement.getMetaData().getPrecision());
+        } catch (Exception e) {
+            throw new DAOException(e);
+        }
+
+        try  {
             prepareStatementForSelect(statement, key);
             ResultSet rs = statement.executeQuery();
             list = parseResultSet(rs);
         } catch (Exception e) {
-            throw new DAOException(e);
-        }
+            throw new DAOException(e);}
+
         if (list == null || list.size() == 0) {
             throw new DAOException("Record with such PK(s) not found.");
         }
@@ -127,18 +142,21 @@ public abstract class AbstractReflectionJDBCDao<T> implements InterfaceReflectio
         return list.iterator().next();
     }
 
-   /* @Override
+    @Override
     public List<T> selectAll() throws DAOException {
-        List<T> list;
-        String sql = getSelectAllQuery();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            ResultSet rs = statement.executeQuery();
-            list = parseResultSet(rs,);
-        } catch (Exception e) {
-            throw new DAOException(e);
-        }
+        List<T> list = null;
+        T obj = null;
+        Class cnstr = obj.getClass();
+        System.out.print(cnstr);
+        //String sql = getSelectAllQuery();
+        //try (PreparedStatement statement = connection.prepareStatement(sql)) {
+         //   ResultSet rs = statement.executeQuery();
+          //  list = parseResultSet(rs,);
+        //} catch (Exception e) {
+         //   throw new DAOException(e);
+        //}
         return list;
-    }*/
+    }
 
     public static Class<?> getClass(Type type)
     {
