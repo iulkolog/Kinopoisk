@@ -41,6 +41,6 @@ import java.util.List;
     * Выборка всех объектов из соответствующей таблицы БД;
     * @return список выбранных объектов
     */
-    //public List< T > selectAll() throws DAOException;
+    public List< T > selectAll() throws DAOException;
 }
 
