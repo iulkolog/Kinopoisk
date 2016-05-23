@@ -7,7 +7,7 @@ import java.io.Serializable;
  * Created by Iulkolog on 19.05.2016.
  */
 
-@TableInfo(tableName = "objects.User", primaryKey = "user_id")
+@TableInfo(tableName = "mydatabase.Users", primaryKey = "user_id")
 public class User implements Serializable {
     @FieldInfo(fieldName = "user_id", isPrimaryKey = true)
     private int userId = 0;
