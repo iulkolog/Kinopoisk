@@ -7,14 +7,9 @@ import java.sql.Connection;
  */
 public interface DAOFactory <Context>{
 
-    /** Возвращает подключение к базе данных */
     public Context getContext() throws DAOException;
 
-   // public InterfaceReflectionJdbcDao getDao(Context context, Class dtoClass) throws DAOException;
-
-    //public InterfaceReflectionJdbcDao getDao(Connection connection, Class dtoClass) throws DAOException;
-
-    InterfaceReflectionJdbcDao getDao(Connection connection) throws DAOException;
+    public InterfaceReflectionJdbcDao getDao(Context context) throws DAOException;
 
 
     public interface DaoCreator<Context> {
