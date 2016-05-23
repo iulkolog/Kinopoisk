@@ -3,9 +3,8 @@ package dao;
 import objects.FieldInfo;
 import objects.TableInfo;
 
+
 import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -64,7 +63,7 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
 
     //"UPDATE  SET FIELD1 = ? ... WHERE PK = ?;"
     @Override
-    public String getUpdateQuery(T object) {
+    public String getUpdateQuery(T object) throws DAOException {
 
         try{
             String tableName = getTableName(object);
@@ -81,13 +80,10 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
             throw new DAOException(e + " Class did'nt annotated with TableInfo or FieldIndo @interface");
 
         }
-        finally {
-            return "";
-        }
     }
 
     @Override
-    public String getDeleteQuery(T object) {
+    public String getDeleteQuery(T object) throws DAOException {
 
         try{
             String tableName = getTableName(object);
@@ -103,13 +99,11 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
             throw new DAOException(e + " Class did'nt annotated with TableInfo @interface");
 
         }
-        finally {
-            return "";
-        }
+
     }
 
     @Override
-    public String getSelectQuery(T object) {
+    public String getSelectQuery(T object) throws DAOException {
 
         try{
             String tableName = getTableName(object);
@@ -118,7 +112,10 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
 
             String values = getFieldNames(object, "%s, %s", "", true);
 
-            String sql = "SELECT " + values + " FROM " + tableName + " WHERE " + primaryKey + ";";
+            String sql = "SELECT " + values + " FROM " + tableName + " WHERE " + primaryKey;
+
+
+            System.out.println(sql);
             return sql;
 
 
@@ -126,13 +123,10 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
             throw new DAOException(e + " Class did'nt annotated with TableInfo or FieldIndo @interface");
 
         }
-        finally {
-            return "";
-        }
     }
 
     @Override
-    public String getSelectAllQuery(T object) {
+    public String getSelectAllQuery(T object) throws DAOException {
 
         try{
             String tableName = getTableName(object);
@@ -146,9 +140,6 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
         }catch (Exception e){
             throw new DAOException(e + " Class did'nt annotated with TableInfo or FieldIndo @interface");
 
-        }
-        finally {
-            return "";
         }
     }
 
@@ -168,10 +159,22 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
             int numberOfPrimaryKeysFields = 0;
             String tableFields = "";
 
-            for (Field f : fields) {
-                if (f.isAnnotationPresent(FieldInfo.class) )
-                    if (f.getAnnotation(FieldInfo.class).isPrimaryKey()) {
-                        tableFields = String.format(format, tableFields, f.getAnnotation((FieldInfo.class)).fieldName() +
+            if (fields.length != 0)
+            {
+                fields[0].setAccessible(true);
+                if (fields[0].isAnnotationPresent(FieldInfo.class) )
+                    if (fields[0].getAnnotation(FieldInfo.class).isPrimaryKey()) {
+                        tableFields = fields[0].getAnnotation((FieldInfo.class)).fieldName() +
+                                additional;
+                        numberOfPrimaryKeysFields++;
+                    }
+            }
+
+            for (int i = 1; i < fields.length; i++) {
+                fields[i].setAccessible(true);
+                if (fields[i].isAnnotationPresent(FieldInfo.class) )
+                    if (fields[i].getAnnotation(FieldInfo.class).isPrimaryKey()) {
+                        tableFields = String.format(format, tableFields, fields[i].getAnnotation((FieldInfo.class)).fieldName() +
                                 additional);
                         numberOfPrimaryKeysFields++;
                     }
@@ -191,8 +194,19 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
             Field[] fields = getAnnotatedFields(object,withPK);
             String tableFields = "";
 
-            for (Field f : fields) {
-                tableFields = String.format(format, tableFields, f.getAnnotation((FieldInfo.class)).fieldName() +
+            if (fields.length != 0)
+            {
+                fields[0].setAccessible(true);
+                if (fields[0].isAnnotationPresent(FieldInfo.class) )
+                    if (fields[0].getAnnotation(FieldInfo.class).isPrimaryKey()) {
+                        tableFields = fields[0].getAnnotation((FieldInfo.class)).fieldName() +
+                                additional;
+                    }
+            }
+
+            for (int i = 1; i < fields.length; i++) {
+                fields[i].setAccessible(true);
+                tableFields = String.format(format, tableFields, fields[i].getAnnotation((FieldInfo.class)).fieldName() +
                             additional);
 
             }
@@ -210,6 +224,7 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
             Field[] fields = object.getClass().getDeclaredFields();
 
             for (Field f : fields) {
+                f.setAccessible(true);
                 if (f.isAnnotationPresent(FieldInfo.class) )
                     if ((withPK) || (!f.getAnnotation(FieldInfo.class).isPrimaryKey())) {
                         annotatedFields.add(f);
@@ -234,6 +249,7 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
             Field[] fields = object.getClass().getDeclaredFields();
 
             for(int i = 1; i<= fields.length; i++) {
+                fields[i-1].setAccessible(true);
                 if(!fields[i-1].getAnnotation(FieldInfo.class).isPrimaryKey()) {
                     /*Type type = fields[i - 1].getGenericType();
                     if (type instanceof ParameterizedType) {
@@ -263,12 +279,14 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
 
             int i = 1;
             for(Field f: fields) {
+                f.setAccessible(true);
                 if(!f.getAnnotation(FieldInfo.class).isPrimaryKey()) {
                     statement.setObject(i, f.get(object));
                     i++;
                 }
             }
             for(Field f: fields) {
+                f.setAccessible(true);
                 if(f.getAnnotation(FieldInfo.class).isPrimaryKey()) {
                     statement.setObject(i, f.get(object));
                     i++;
@@ -285,10 +303,15 @@ public class MySqlReflectionJdbcDao <T>  extends AbstractReflectionJDBCDao < T >
         try {
             Field[] fields = object.getClass().getDeclaredFields();
 
+
+            System.out.println(statement.getMetaData() + " =N");
             int i = 1;
             for(Field f: fields) {
+                f.setAccessible(true);
+
                 if(f.getAnnotation(FieldInfo.class).isPrimaryKey()) {
-                    statement.setObject(i, f.get(object));
+                    System.out.println("i = " + i);
+                    //statement.setObject(i, f.get(object));
                     i++;
                 }
             }
